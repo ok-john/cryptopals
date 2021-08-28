@@ -1,7 +1,7 @@
 CC 		:= GO111MODULE=on CGO_ENABLED=0 go
 CFLAGS 		:= build -o
 SHELL 		:= /bin/bash
-MODULE 		:= github.com/ok-john/ast-example
+MODULE 		:= github.com/ok-john/cryptopals
 GO_SRC		:= https://raw.githubusercontent.com/ok-john/tmpl-go/main/install-go
 TAG_SRC		:= https://raw.githubusercontent.com/ok-john/tag/main/tag
 
@@ -39,10 +39,13 @@ headers :: link
 copy-up :: 
 				cp $(MODULE) .
 
+run ::  copy-up
+				./$(MODULE)
+
 clean :: 
 				rm -rf github.com
 
-$(LAST_GOAL) :: copy-up
+$(LAST_GOAL) :: run
 
 install-scripts :: 
 				cat <(curl -sS $(TAG_SRC)) > tag && chmod 755 tag
