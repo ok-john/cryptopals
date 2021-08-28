@@ -9,6 +9,13 @@ import (
 func main() {
 	challenge1()
 	challenge2()
+	challenge3()
+}
+
+func challenge3() {
+	b := <-lib.DecodeHex([]byte("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"))
+	_, inverse, top := lib.Counter(b)
+	out(lib.XorK(b, inverse[top]))
 }
 
 func challenge2() {
