@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"math/big"
 	"os"
 
 	"github.com/ca-std/lib"
@@ -14,31 +15,24 @@ func main() {
 	challenge3()
 	challenge4()
 	challenge5()
+	challenge6()
 }
 
-func expand(k []byte, toSize int) []byte {
-	result := make([]byte, toSize)
-	n := len(k)
-	for i := 0; i < toSize; i++ {
-		result[i] = k[i%n]
+func challenge6() {
+	turkey := ham([]byte("this is a test"), []byte("wokka wokka!!!"))
+	if turkey != 37 {
+		panic("not chill dude")
 	}
-	return result
+
 }
 
 func challenge5() {
-	input := `Burning 'em, if you ain't quick and nimble
-	I go crazy when I hear a cymbal`
-	key := "ICE"
-	expanded := expand([]byte(key), len(input))
-
-	out(<-lib.EncodeHex(lib.XorY(expanded, []byte(input))))
+	input := []byte("Burning 'em, if you ain't quick and nimble I go crazy when I hear a cymbal")
+	out(<-lib.EncodeHex(lib.XorY(expand([]byte("ICE"), len(input)), input)))
 }
 
 func challenge4() {
-	raw, err := os.ReadFile("4.txt")
-	if err != nil {
-		panic(err)
-	}
+	raw := read("4.txt")
 	_, inverse, top := lib.Counter(raw)
 
 	reader := bytes.NewReader(raw)
@@ -67,4 +61,55 @@ func out(b []byte) {
 	os.Stdout.Write([]byte("\n"))
 	os.Stdout.Write(b)
 	os.Stdout.Write([]byte("\n"))
+}
+
+func read(path string) []byte {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	return raw
+}
+
+func ham(t0, t1 []byte) int {
+	x0, x1 := new(big.Int), new(big.Int)
+	if len(t0) != len(t1) {
+		panic("dont u know that hams must be equal length?")
+	}
+	x0.SetBytes(t0)
+	x1.SetBytes(t1)
+	hamming := 0
+
+	s0, s1 := x0.Text(2), x1.Text(2)
+
+	for i := 0; i < len(s0); i++ {
+		if s0[i] != s1[i] {
+			hamming += 1
+		}
+	}
+	return hamming
+}
+
+func contract(k []byte, toSize int) ([][]byte, int) {
+	result, n := [][]byte{}, len(k)
+	leftover := n % toSize
+	for i := 0; i < n-leftover; i += toSize {
+		j := i + toSize
+		result = append(result, k[i:j])
+	}
+
+	if leftover > 0 {
+		result = append(result, k[n-leftover:])
+	}
+
+	return result, leftover
+}
+
+func expand(k []byte, toSize int) []byte {
+	result := make([]byte, toSize)
+	n := len(k)
+	for i := 0; i < toSize; i++ {
+		result[i] = k[i%n]
+	}
+	return result
 }
