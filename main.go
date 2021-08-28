@@ -91,6 +91,7 @@ func read(path string) *bufio.Scanner {
 	return bufio.NewScanner(rd(path))
 }
 
+
 func heaviest(from []byte, u *lib.Universe) []byte {
 	max, r := 0, []byte{}
 	_, sets := u.PCollect()
@@ -98,10 +99,8 @@ func heaviest(from []byte, u *lib.Universe) []byte {
 		if s != nil {
 			for _, b := range s.V.Bytes() {
 				x := lib.XorK(from, b)
-				w := weigh(x)
-				if w > max {
-					max = w
-					r = x
+				if w := weigh(x); w > max {
+					max, r = w, x
 				}
 			}
 		}
@@ -110,14 +109,13 @@ func heaviest(from []byte, u *lib.Universe) []byte {
 }
 
 func weigh(raw []byte) int {
-	freq := map[string]float64{}
+	freq, w := map[string]float64{}, 0.0
 	freq["e"], freq["t"], freq["a"], freq["o"], freq["i"], freq["n"], freq["s"], freq["r"], freq["h"], freq["d"], freq["l"], freq["u"], freq["c"], freq["m"], freq["f"], freq["y"], freq["w"], freq["g"], freq["p"], freq["b"], freq["v"], freq["k"], freq["z"], freq["q"], freq["j"], freq["z"] = 12.02, 9.10, 8.12, 7.68, 7.31, 6.95, 6.28, 6.02, 5.92, 4.32, 3.98, 2.88, 2.71, 2.61, 2.30, 2.11, 2.09, 2.03, 1.82, 1.49, 1.11, 0.69, 0.17, 0.11, 0.10, 0.07
-	w := 0.0
 	for _, b := range raw {
-		s := string(b)
-		if v, exists := freq[s]; exists {
+		if v, exists := freq[string(b)]; exists {
 			w += v
 		}
 	}
 	return int(w * 10.0000000005)
 }
+
