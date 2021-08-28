@@ -1,0 +1,12 @@
+ast-example     
+        An example of parsing an AST of sys-calls executed by a static go binary.
+        
+        Build the executable
+
+                make 
+
+        Execute & parse the AST.
+                
+                make ast
+
+        see EXAMPLE for output format
