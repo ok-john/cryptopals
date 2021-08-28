@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"math/big"
+	"math"
 	"os"
 
 	"github.com/ca-std/lib"
@@ -19,28 +19,44 @@ func main() {
 }
 
 func challenge6() {
-	turkey := ham([]byte("this is a test"), []byte("wokka wokka!!!"))
+	turkey := lib.Ham([]byte("this is a test"), []byte("wokka wokka!!!"))
 	if turkey != 37 {
 		panic("not chill dude")
+	}
+
+	shortestKeySize, shortestDistance := 0, math.MaxInt
+	distancesToFrequency := map[int]int{}
+	distancesToKeySizes := map[int][]int{}
+	for keysize, reader, distance := int64(2), rd("6.txt"), 0; keysize < reader.Size()/2; keysize++ {
+		for i := int64(0); i < reader.Size(); i += keysize {
+			p0, p1 := make([]byte, keysize), make([]byte, keysize)
+			reader.ReadAt(p0, i)
+			reader.ReadAt(p1, i+keysize)
+			distance += lib.Ham(lib.Expand(lib.ToBase(p0, 2), int(keysize)), lib.Expand(lib.ToBase(p1, 2), int(keysize)))
+		}
+		distance = distance / int(keysize)
+		distancesToFrequency[distance]++
+		distancesToKeySizes[distance] = append(distancesToKeySizes[distance], int(keysize))
+		shortestDistance, shortestKeySize = lib.MinEq(shortestDistance, distance), lib.MinEq(int(shortestKeySize), int(keysize))
 	}
 
 }
 
 func challenge5() {
 	input := []byte("Burning 'em, if you ain't quick and nimble I go crazy when I hear a cymbal")
-	out(<-lib.EncodeHex(lib.XorY(expand([]byte("ICE"), len(input)), input)))
+	out(<-lib.EncodeHex(lib.XorY(lib.Expand([]byte("ICE"), len(input)), input)))
 }
 
 func challenge4() {
-	raw := read("4.txt")
-	_, inverse, top := lib.Counter(raw)
-
-	reader := bytes.NewReader(raw)
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		b := scanner.Bytes()
-		out(<-lib.EncodeHex(lib.XorK(b, inverse[top])))
+	u8, max, set := lib.UniformDistribution(8), 0, []byte{}
+	for scanner := read("4.txt"); scanner.Scan(); {
+		s := heaviest(<-lib.DecodeHex(scanner.Bytes()), u8)
+		w := weigh(s)
+		if w > max {
+			max, set = w, s
+		}
 	}
+	out(set)
 }
 
 func challenge3() {
@@ -63,53 +79,45 @@ func out(b []byte) {
 	os.Stdout.Write([]byte("\n"))
 }
 
-func read(path string) []byte {
+func rd(path string) *bytes.Reader {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}
-	return raw
+	return bytes.NewReader(raw)
 }
 
-func ham(t0, t1 []byte) int {
-	x0, x1 := new(big.Int), new(big.Int)
-	if len(t0) != len(t1) {
-		panic("dont u know that hams must be equal length?")
-	}
-	x0.SetBytes(t0)
-	x1.SetBytes(t1)
-	hamming := 0
+func read(path string) *bufio.Scanner {
+	return bufio.NewScanner(rd(path))
+}
 
-	s0, s1 := x0.Text(2), x1.Text(2)
-
-	for i := 0; i < len(s0); i++ {
-		if s0[i] != s1[i] {
-			hamming += 1
+func heaviest(from []byte, u *lib.Universe) []byte {
+	max, r := 0, []byte{}
+	_, sets := u.PCollect()
+	for _, s := range sets {
+		if s != nil {
+			for _, b := range s.V.Bytes() {
+				x := lib.XorK(from, b)
+				w := weigh(x)
+				if w > max {
+					max = w
+					r = x
+				}
+			}
 		}
 	}
-	return hamming
+	return r
 }
 
-func contract(k []byte, toSize int) ([][]byte, int) {
-	result, n := [][]byte{}, len(k)
-	leftover := n % toSize
-	for i := 0; i < n-leftover; i += toSize {
-		j := i + toSize
-		result = append(result, k[i:j])
+func weigh(raw []byte) int {
+	freq := map[string]float64{}
+	freq["e"], freq["t"], freq["a"], freq["o"], freq["i"], freq["n"], freq["s"], freq["r"], freq["h"], freq["d"], freq["l"], freq["u"], freq["c"], freq["m"], freq["f"], freq["y"], freq["w"], freq["g"], freq["p"], freq["b"], freq["v"], freq["k"], freq["z"], freq["q"], freq["j"], freq["z"] = 12.02, 9.10, 8.12, 7.68, 7.31, 6.95, 6.28, 6.02, 5.92, 4.32, 3.98, 2.88, 2.71, 2.61, 2.30, 2.11, 2.09, 2.03, 1.82, 1.49, 1.11, 0.69, 0.17, 0.11, 0.10, 0.07
+	w := 0.0
+	for _, b := range raw {
+		s := string(b)
+		if v, exists := freq[s]; exists {
+			w += v
+		}
 	}
-
-	if leftover > 0 {
-		result = append(result, k[n-leftover:])
-	}
-
-	return result, leftover
-}
-
-func expand(k []byte, toSize int) []byte {
-	result := make([]byte, toSize)
-	n := len(k)
-	for i := 0; i < toSize; i++ {
-		result[i] = k[i%n]
-	}
-	return result
+	return int(w * 10.0000000005)
 }
